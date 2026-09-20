@@ -1,3 +1,5 @@
+// 顺序表是一种逻辑上的线性表，而数组是实现这种线性表的底层存储方式之一
+// 结构体只是我们在C语言中把“数组 + 长度等管理信息”组织起来的一种实现手段
 #include <stdio.h>
 #include <string.h>
 #define MAXSIZE 100
@@ -10,7 +12,7 @@ typedef struct{
 
 
 // 在第 pos 个位置插入 value
-// SeqList* list首地址
+// SeqList* list首地址，传地址进去就可以同时修改data[]和length了
 void insert(SeqList* list, int pos, int value){
     // 判断位置是否合法
     // 顺序表容量固定，不是变长数组
