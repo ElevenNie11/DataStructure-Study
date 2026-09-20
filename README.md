@@ -149,3 +149,27 @@ int main(){
     return 0;
 }
 ```
+
+## 📕总结memmove
+
+### Ⅰ.插入 :把后面的元素向后移动
+```
+memmove(
+    &list->data[pos],
+    &list->data[pos - 1],
+    (list->length - pos + 1) * sizeof(int)
+);
+```
+
+### Ⅱ.删除：把后面的元素向前移动
+```
+memmove(
+    &list->data[pos - 1],
+    &list->data[pos],
+    (list->length - pos) * sizeof(int)
+);
+```
+
+---
+
+# 单链表
