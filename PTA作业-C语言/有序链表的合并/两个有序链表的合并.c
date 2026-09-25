@@ -30,7 +30,7 @@ Node* createList(){
 }
 
 // 合并两个非降序链表
-Node* MergeList(Node *s1, Node* s2){
+Node* mergeList(Node *s1, Node* s2){
     Node* head = NULL;
     Node* tail = NULL;
     while(s1 != NULL && s2 != NULL){
@@ -70,7 +70,7 @@ Node* MergeList(Node *s1, Node* s2){
 }
 
 // 输出链表
-void PrintList(Node* head){
+void printList(Node* head){
     if(head == NULL){
         printf("NULL");
         return;
@@ -88,7 +88,7 @@ void PrintList(Node* head){
 int main(){
     Node* s1 = createList();
     Node* s2 = createList();
-    Node* s3 = MergeList(s1, s2);
-    PrintList(s3);
+    Node* s3 = mergeList(s1, s2);
+    printList(s3);
     return 0;
 }
