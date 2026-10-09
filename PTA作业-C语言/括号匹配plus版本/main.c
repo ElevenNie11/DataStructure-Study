@@ -23,7 +23,7 @@ int isLeft(char c) {
 }
 
 // getMatch函数的作用是：给定一个左符号，返回它对应的右符号
-char getMatch(char c) {
+char getMatch(char c){
     if(c == '('){
         return ')';
     }
@@ -37,7 +37,7 @@ char getMatch(char c) {
 }
 
 // setError函数的作用是：记录（保存）第一个不匹配的符号
-void setError(char left, char right) {
+void setError(char left, char right){
     if(!errorFound){
         errorLeft = left;
         errorRight = right;
@@ -45,7 +45,7 @@ void setError(char left, char right) {
     }
 }
 
-int main() {
+int main(){
     char line[5000];  // 用于存放每一行输入的字符串
 
     // 读取输入的每一行 直到遇到单独的"."为止
@@ -70,27 +70,24 @@ int main() {
         }
 
         // 开始逐个字符扫描源程序
-        for(int i = 0; line[i] != '\0'; i++){
+        for (int i = 0; line[i] != '\0'; i++) {
             char c = line[i];
             char next = line[i + 1];
 
-            if(inComment){
-                if(c == '*' && next == '/'){
+            if (inComment) {
+                if (c == '*' && next == '/') {
                     inComment = 0;
-                    if(top >= 0 && stack[top] == 'C'){
-                        top--;
-                    }
                     i++;
                 }
                 continue;
             }
 
-            if(quote != 0){
-                if(escape){
+            if (quote != 0) {
+                if (escape) {
                     escape = 0;
-                }else if(c == '\\'){
+                } else if (c == '\\') {
                     escape = 1;
-                }else if(c == quote){
+                } else if (c == quote) {
                     quote = 0;
                 }
                 continue;
@@ -101,12 +98,14 @@ int main() {
             }
 
             if (c == '/' && next == '*') {
-                if (top < MAXSIZE - 1) {
-                    stack[++top] = 'C';
-                }
                 inComment = 1;
                 i++;
                 continue;
+            }
+
+            if (c == '*' && next == '/') {
+                setError(0, 'D');
+                break;
             }
 
             if (c == '"' || c == '\'') {
@@ -138,17 +137,23 @@ int main() {
         }
     }
 
-    if (!errorFound && top != -1) {
-        setError(stack[0], 0);
+    if (!errorFound) {
+        if (inComment) {
+            setError('C', 0);
+        } else if (top != -1) {
+            setError(stack[0], 0);
+        }
     }
 
     if (errorFound) {
         printf("NO\n");
 
-        if (errorLeft == 0) {
-            printf("?-%c\n", errorRight);
-        } else if (errorLeft == 'C') {
+        if (errorLeft == 'C') {
             printf("/*-?\n");
+        } else if (errorRight == 'D') {
+            printf("?-*/\n");
+        } else if (errorLeft == 0) {
+            printf(" ?-%c\n", errorRight);
         } else {
             printf("%c-?\n", errorLeft);
         }
