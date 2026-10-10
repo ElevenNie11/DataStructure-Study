@@ -1,3 +1,4 @@
+// 额外用C/D两个哨兵字符把双字符的注释符塞进了字符栈
 #include <stdio.h>
 #include <string.h>
 #define MAXSIZE 1000
@@ -15,6 +16,7 @@ int check(char left, char right){
     return 0;
 }
 // 辅助02：打印缺少右半部分的左符号
+// 栈里剩下的左符号永远等不到右符号时调用
 void printLeft(char c){
     if(c == 'C'){
         printf("/*-?\n");
@@ -23,6 +25,7 @@ void printLeft(char c){
     }
 }
 // 辅助03：打印缺少左半部分的右符号
+// 遇到右符号但栈已经空了时调用
 void printRight(char c){
     if(c == 'D'){
         printf("?-*/\n");
@@ -34,6 +37,7 @@ void printRight(char c){
 // 主程序逐行读取输入，处理每一行，遇到单独的一行 . 就结束输入
 int main(){
     char line[5000];
+    // fgets()函数逐行读取输入
     while(fgets(line, sizeof(line), stdin) != NULL){
         int start = 0;
         // 去掉行首空白符
@@ -49,6 +53,8 @@ int main(){
         if(end == start && line[start] == '.'){
             break;
         }
+
+        // ======【重点】======
         // 遍历每一行的字符(逐字符扫描，处理各种符号)
         for(int i = 0; line[i] != '\0'; i++){
             char c = line[i];
@@ -56,6 +62,7 @@ int main(){
 
             // 压栈
             // 如果遇到左半部分符号(、[、{、C，就压入栈中
+            // 如果遇到右半部分符号)、]、}、D，就弹出栈顶元素判断是否匹配
             if(c == '/' && line[i + 1] == '*'){
                 if(top < MAXSIZE - 1){
                     stack[++top] = 'C'; // 压入栈中
@@ -63,9 +70,6 @@ int main(){
                 i++; // 跳过下一个字符 * 避免 * 被重复处理
                 continue; // 继续处理下一个字符(不需要走配对逻辑，左符号只入栈，等后面匹配)
             }
-
-            // 出栈
-            // 如果遇到右半部分符号)、]、}、D，就弹出栈顶元素判断是否匹配
             if(c == '*' && line[i + 1] == '/'){
                 right = 'D'; // 右半部分符号为 D
                 i++;         // 跳过下一个字符 / 避免 / 被重复处理
@@ -79,13 +83,16 @@ int main(){
             }else{
                 continue; // 其他字符不处理，继续处理下一个字符
             }
-
+            // ======【重点】======
+            // 1. 栈空→ 这个右符号没有对应的左符号 → 输出NO + printRight(right)，程序立即结束（return 0）
             if(top == -1){
                 printf("NO\n");    // 栈空，说明没有匹配的左半部分符号
                 printRight(right); // 打印缺少左半部分的右符号
                 return 0;          // 结束程序
             }
 
+            // ======【重点】======
+            // 2. 栈不空但不匹配→ 栈顶元素和当前右半部分符号不匹配 → 输出NO + printLeft(stack[top])，程序立即结束（return 0）
             if(!check(stack[top], right)){
                 printf("NO\n");         // 栈顶元素和当前右半部分符号不匹配
                 printLeft(stack[top]);  // 打印缺少右半部分的左符号
@@ -95,6 +102,7 @@ int main(){
         }
     }
 
+    // 全部输入处理完后的最终判定
     if(top == -1){
         printf("YES\n"); // 栈空，说明所有符号匹配成功
     }else{
