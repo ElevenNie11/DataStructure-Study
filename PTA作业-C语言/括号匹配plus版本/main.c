@@ -1,165 +1,105 @@
-
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-#define MAXSIZE 100
+#define MAXSIZE 1000
 
-char stack[MAXSIZE];  // 用于存放尚未匹配的左符号
-int top = -1;         // 栈顶元素的下标，top为-1表示栈为空  
+char stack[MAXSIZE]; // 把遇到的左括号(、[、{、C压入栈中，等后面遇到对的右括号)、]、}、D时，弹出栈顶元素判断是否匹配
+int top = -1;        // 栈顶下标，-1表示栈空
 
-int inComment = 0;    // 是否处于/* ... */注释内部
-char quote = 0;       // 是否处于字符串或字符常量内部
-// printf("hello ( [ {");
-// 这里的括号都在字符串中 不应该参与括号匹配
-int escape = 0;       // 是否刚刚读取到转义符号 \
-
-char errorLeft = 0;   // 记录不匹配的左符号
-char errorRight = 0;  // 记录不匹配的右符号
-int errorFound = 0;   // 是否已经找到第一个错误
-
-// isLeft函数的作用是：判断一个字符是否为左符号
-int isLeft(char c) {
-    return c == '(' || c == '[' || c == '{' || c == 'C';
+// 三个辅助函数
+// 辅助01：检查左右括号是否匹配
+int check(char left, char right){
+    if(left == '(' && right == ')') return 1;
+    if(left == '[' && right == ']') return 1;
+    if(left == '{' && right == '}') return 1;
+    if(left == 'C' && right == 'D') return 1;
+    return 0;
 }
-
-// getMatch函数的作用是：给定一个左符号，返回它对应的右符号
-char getMatch(char c){
-    if(c == '('){
-        return ')';
+// 辅助02：打印缺少右半部分的左符号
+void printLeft(char c){
+    if(c == 'C'){
+        printf("/*-?\n");
+    }else{
+        printf("%c-?\n", c);
     }
-    if(c == '['){
-        return ']';
-    }
-    if(c == '{'){
-        return '}';
-    }
-    return '\0';
 }
-
-// setError函数的作用是：记录（保存）第一个不匹配的符号
-void setError(char left, char right){
-    if(!errorFound){
-        errorLeft = left;
-        errorRight = right;
-        errorFound = 1;
+// 辅助03：打印缺少左半部分的右符号
+void printRight(char c){
+    if(c == 'D'){
+        printf("?-*/\n");
+    }else{
+        printf("?-%c\n", c);
     }
 }
 
+// 主程序逐行读取输入，处理每一行，遇到单独的一行 . 就结束输入
 int main(){
-    char line[5000];  // 用于存放每一行输入的字符串
-
-    // 读取输入的每一行 直到遇到单独的"."为止
-    // 题目规定，当某一行只有一个句点 . 时才输入结束 因此程序需要判断这一行是否为结束标志 而不是遇到程序中任意一个句点就结束
+    char line[5000];
     while(fgets(line, sizeof(line), stdin) != NULL){
-        // 逐个扫描每个字符
         int start = 0;
-        // isspace函数的作用是：判断一个字符是否为空白字符（空格、制表符、换行符等）
-        // while循环的作用是：跳过行首的空白字符，找到这一行第一个有意义的字符
-        while(isspace(line[start]) && line[start] != '\n' && line[start] != '\r'){
+        // 去掉行首空白符
+        while(line[start] == ' ' || line[start] == '\t' || line[start] == '\r' || line[start] == '\n'){
             start++;
         }
-
-        int end = start + 1;
-        // 它负责跳过句点后面的空格、制表符、回车符和换行符
-        while(line[end] == ' ' || line[end] == '\t' || line[end] == '\r' || line[end] == '\n'){
-            end++;
+        int end = strlen(line) - 1;
+        // 去掉行尾空白符
+        while(end >= start && (line[end] == ' ' || line[end] == '\t' || line[end] == '\r' || line[end] == '\n')){
+            end--;
         }
-
-        if(line[start] == '.' && line[end] == '\0'){
+        // 如果整行只有一个 . 就结束输入
+        if(end == start && line[start] == '.'){
             break;
         }
-
-        // 开始逐个字符扫描源程序
-        for (int i = 0; line[i] != '\0'; i++) {
+        // 遍历每一行的字符(逐字符扫描，处理各种符号)
+        for(int i = 0; line[i] != '\0'; i++){
             char c = line[i];
-            char next = line[i + 1];
+            char right = '\0'; // 右半部分符号，初始化为空字符
 
-            if (inComment) {
-                if (c == '*' && next == '/') {
-                    inComment = 0;
-                    i++;
+            // 压栈
+            // 如果遇到左半部分符号(、[、{、C，就压入栈中
+            if(c == '/' && line[i + 1] == '*'){
+                if(top < MAXSIZE - 1){
+                    stack[++top] = 'C'; // 压入栈中
                 }
-                continue;
+                i++; // 跳过下一个字符 * 避免 * 被重复处理
+                continue; // 继续处理下一个字符(不需要走配对逻辑，左符号只入栈，等后面匹配)
             }
 
-            if (quote != 0) {
-                if (escape) {
-                    escape = 0;
-                } else if (c == '\\') {
-                    escape = 1;
-                } else if (c == quote) {
-                    quote = 0;
+            // 出栈
+            // 如果遇到右半部分符号)、]、}、D，就弹出栈顶元素判断是否匹配
+            if(c == '*' && line[i + 1] == '/'){
+                right = 'D'; // 右半部分符号为 D
+                i++;         // 跳过下一个字符 / 避免 / 被重复处理
+            }else if(c == ')' || c == ']' || c == '}'){
+                right = c;   // 右半部分符号为 )、]、}
+            }else if(c == '(' || c == '[' || c == '{'){
+                if(top < MAXSIZE - 1){
+                    stack[++top] = c; // 压入栈中
                 }
-                continue;
+                continue; // 继续处理下一个字符(不需要走配对逻辑，左符号只入栈，等后面匹配)
+            }else{
+                continue; // 其他字符不处理，继续处理下一个字符
             }
 
-            if (c == '/' && next == '/') {
-                break;
+            if(top == -1){
+                printf("NO\n");    // 栈空，说明没有匹配的左半部分符号
+                printRight(right); // 打印缺少左半部分的右符号
+                return 0;          // 结束程序
             }
 
-            if (c == '/' && next == '*') {
-                inComment = 1;
-                i++;
-                continue;
+            if(!check(stack[top], right)){
+                printf("NO\n");         // 栈顶元素和当前右半部分符号不匹配
+                printLeft(stack[top]);  // 打印缺少右半部分的左符号
+                return 0;               // 结束程序
             }
-
-            if (c == '*' && next == '/') {
-                setError(0, 'D');
-                break;
-            }
-
-            if (c == '"' || c == '\'') {
-                quote = c;
-                continue;
-            }
-
-            if (c == '(' || c == '[' || c == '{') {
-                if (top < MAXSIZE - 1) {
-                    stack[++top] = c;
-                }
-            } else if (c == ')' || c == ']' || c == '}') {
-                if (top == -1) {
-                    setError(0, c);
-                } else if (getMatch(stack[top]) == c) {
-                    top--;
-                } else {
-                    setError(stack[top], 0);
-                }
-            }
-
-            if (errorFound) {
-                break;
-            }
-        }
-
-        if (errorFound) {
-            break;
+            top--; // 匹配成功，弹出栈顶元素
         }
     }
 
-    if (!errorFound) {
-        if (inComment) {
-            setError('C', 0);
-        } else if (top != -1) {
-            setError(stack[0], 0);
-        }
+    if(top == -1){
+        printf("YES\n"); // 栈空，说明所有符号匹配成功
+    }else{
+        printf("NO\n"); // 栈不空，说明还有未匹配的左半部分符号
+        printLeft(stack[top]); // 打印缺少右半部分的左符号
     }
-
-    if (errorFound) {
-        printf("NO\n");
-
-        if (errorLeft == 'C') {
-            printf("/*-?\n");
-        } else if (errorRight == 'D') {
-            printf("?-*/\n");
-        } else if (errorLeft == 0) {
-            printf(" ?-%c\n", errorRight);
-        } else {
-            printf("%c-?\n", errorLeft);
-        }
-    } else {
-        printf("YES\n");
-    }
-
     return 0;
 }
