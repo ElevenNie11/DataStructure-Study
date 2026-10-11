@@ -11,6 +11,8 @@
 // 4. 【结果重新入栈】
 // 5. 最后【栈顶即答案】
 
+// 修复处理：除0问题 / 负数问题
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -73,23 +75,29 @@ int main(){
 */
     // strtok(原字符串, 分隔符);
     // 按照分隔符分割原字符串
-    char* p = strtok(str, " ");  // strtok()是C语言里面的字符串切割函数:按照空格切割字符串
+    char* p = strtok(str, " \n");  // strtok()是C语言里面的字符串切割函数:按照空格和回车切割字符串
     while(p != NULL){
         token[count] = p;
         count++;
-        p = strtok(NULL, " ");   // 继续刚才那个字符串，找下一个
+        p = strtok(NULL, " \n");   // 继续刚才那个字符串，找下一个
     }
 
     // 从右往左处理
+    int ok = 1;   // 处理除0问题和只有一个操作数的问题
     for(int i = count - 1; i >= 0; i--){
         // 如果是数字
         // 【注意】：*token[i] 取出来是字符char类型，而不是double类型，所以还必须把它们转换成double类型
         // 【易错】：*token[i] 写法没问题但是token[i]代表的是字符串（比如"123"），而*token[i]就代表的'1'
         // 【提示】：*token[i]等价于token[i][0]
 
-        if(!isOperator(*token[i])){
+        if(!(strlen(token[i]) == 1 && isOperator(*token[i]))){  // 整个token只有一个字符才是运算符（比如：-是减号，但是-2是负数）
             push(atof(token[i]));  // 不可以写成 atof(*token[i]) 因为*token[i]取出的是字符，不是字符串，不能直接传给atof()
         }else{ // 如果是运算符
+            // 弹栈之前检查操作数是否足够
+            if(top < 1){
+                ok = 0;
+                break;
+            }
             double a = pop();
             double b = pop();
             double result;
@@ -104,13 +112,18 @@ int main(){
                     result = a * b;
                     break;
                 case '/':
+                    if(b == 0){  // 除0
+                        ok = 0;
+                        break;
+                    }
                     result = a / b;
                     break;
             }
-        push(result);
+            if(!ok) break;
+            push(result);
         }
     }
-    if(top == 0){
+    if(ok && top == 0){
         printf("%.1lf", stack[top]);
     }else{
         printf("ERROR");
