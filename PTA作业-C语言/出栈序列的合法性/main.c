@@ -18,14 +18,14 @@ int main(){
                 break;       
             }
             stack[++top] = i;    // 题目要求：按1..n入栈
-            while(top >= 0 && stack[top] == seq[pos]){
+            while(top >= 0 && stack[top] == seq[pos]){  // 【重点】：压完这个栈以后，能弹多少弹多少
                 top--;      // 出栈
                 pos++;      // 匹配下一个目标序列元素
             }
         }
         if(flag && pos == n){
             printf("YES\n");
-        } else {
+        }else{
             printf("NO\n");
         }
     }
