@@ -55,8 +55,8 @@ int main(){
     // 因为我们输入的是：+ + 2 * 3 - 7 4 / 8 4
     // 实际上读进C里面是一个完整的字符串："+ + 2 * 3 - 7 4 / 8 4\n"
     // 但是计算时我们需要一个一个拿：+ + 2 * 3... 所以需要进行【字符串分割，分割成token】
-    char* token[100]; // 字符指针数组(保存每一个符号)
-    int count;
+    char* token[100]; // 字符指针数组(保存每一个token)
+    int count = 0;
 /*
     token
     |
@@ -81,12 +81,39 @@ int main(){
     }
 
     // 从右往左处理
-    for(int i = count; i > 0; i++){
+    for(int i = count - 1; i >= 0; i--){
         // 如果是数字
         // 【注意】：*token[i] 取出来是字符char类型，而不是double类型，所以还必须把它们转换成double类型
+        // 【易错】：*token[i] 写法没问题但是token[i]代表的是字符串（比如"123"），而*token[i]就代表的'1'
+        // 【提示】：*token[i]等价于token[i][0]
+
         if(!isOperator(*token[i])){
-            push(*token[i]);
+            push(atof(token[i]));  // 不可以写成 atof(*token[i]) 因为*token[i]取出的是字符，不是字符串，不能直接传给atof()
+        }else{ // 如果是运算符
+            double a = pop();
+            double b = pop();
+            double result;
+            switch(*token[i]){   // *token[i]等价于token[i][0]
+                case '+':
+                    result = a + b;
+                    break;
+                case '-':
+                    result = a - b;
+                    break;
+                case '*':
+                    result = a * b;
+                    break;
+                case '/':
+                    result = a / b;
+                    break;
+            }
+        push(result);
         }
+    }
+    if(top == 0){
+        printf("%.1lf", stack[top]);
+    }else{
+        printf("ERROR");
     }
     return 0;
 }
@@ -94,5 +121,6 @@ int main(){
 
 // 易错：字符转数字以及字符【串】转数字
 // *token[i]         → 取第一个字符
-// (double)*token[i] → 字符ASCII转double
+// (double)*token[i] → 字符ASCII转double（但是只会把第一个字符转成double）
+// 比如"123"，只会把"1"转换成double类型的1
 // atof(token[i])    → 整个字符串转double
